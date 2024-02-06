@@ -2,26 +2,24 @@ package jrso.iodp.iris.irisservice.controller;
 
 import jrso.iodp.iris.irisservice.model.IRISData;
 import jrso.iodp.iris.irisservice.repo.iRISRepo;
+import jrso.iodp.iris.irisservice.service.iRISService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 
 @RestController
 public class ApiControllers {
 
     @Autowired
     private iRISRepo irisRepo;
+
+    @Autowired
+    private iRISService irisservice;
 
     @GetMapping(value = "/")
     public String getPage() {
@@ -48,25 +46,17 @@ public class ApiControllers {
 
 
     //https://stackoverflow.com/questions/59344476/parse-localdatetime-string-correctly-into-spring-boot-pathvariable
-    @GetMapping(value = "/getData/{timeStamp}")
-    public ResponseEntity<IRISData> getData(@PathVariable String timeStamp) {
-
-        try {
-            //      Timestamp sqlTimestamp1 = Timestamp.valueOf("2023-01-04 01:43:17");
-            Timestamp sqlTimestamp1 = Timestamp.valueOf(timeStamp);
-
-            System.out.println("SqlTimestamp1: " + sqlTimestamp1);
-            IRISData data = irisRepo.findById(sqlTimestamp1).get();
-            return ResponseEntity.ok(data);
-//            return new ResponseEntity<IRISData>(data, HttpStatus.OK);
-        } catch (NoSuchElementException e) {
-           return new ResponseEntity<IRISData>(HttpStatus.NOT_FOUND);
-
-        } catch (Exception e) {
-            return new ResponseEntity<IRISData>(HttpStatus.NOT_FOUND);
-        }
+    @GetMapping(value = "/getDataByTime/{timeStamp}")
+    public  IRISData getDataByTime(@PathVariable String timeStamp) {
+        IRISData data = irisservice.getDataByTime(timeStamp);
+         return data;
     }
-
+    @GetMapping(value = "/getDataByTime2")
+    public  IRISData getDataByTime2(@RequestParam(value = "time", required = true) String time) {
+        System.out.println(time);
+        IRISData data = irisservice.getDataByTime(time);
+        return data;
+    }
 //    @GetMapping(value = "/getData2/{timeStamp}")
 //    public ResponseEntity<IRISData> getData2(@PathVariable String timeStamp) {
 //
@@ -88,6 +78,7 @@ public class ApiControllers {
 
     @GetMapping(value = "/getDataByTimeRange/{time1}/{time2}")
     public ResponseEntity<List<IRISData>> getDataByTimeRange(@PathVariable String time1, @PathVariable String time2) {
+        System.out.println(time1);
         try {
             List<IRISData> data = irisRepo.getIRISDataByTimeRange(time1, time2).get();
             if (data.isEmpty()) {
@@ -99,7 +90,21 @@ public class ApiControllers {
         }
 
     }
+    @GetMapping(value = "/getDataByTimeRange2")
+    public ResponseEntity<List<IRISData>> getDataByTimeRange2(@RequestParam(value = "time1", required = true) String time1, @RequestParam(value = "time2", required = true) String time2) {
+        System.out.println(time1);
+        System.out.println(time2);
+        try {
+            List<IRISData> data = irisRepo.getIRISDataByTimeRange(time1, time2).get();
+            if (data.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(data, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
 
+    }
 //    @GetMapping(value = "/getDataByTimeRange2/{time1}/{time2}")
 //    public ResponseEntity<List<IRISData>> getDataByTimeRange2(@PathVariable String time1, @PathVariable String time2) {
 //
